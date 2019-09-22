@@ -1,11 +1,3 @@
-#Format is: X0, X1, X2, X3, S1(MS), S0(LS)
-#Checks if each input works
-100000
-010001
-001010
-000111
-
-#Following has an Unknown selector so if U=0 then we should get bit 00 which is 0
-#And if U=1 then we should get bit 01 which is 1
-#Thus we are expecting a U
-01000U
+010
+111
+110
