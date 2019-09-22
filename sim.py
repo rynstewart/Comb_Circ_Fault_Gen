@@ -380,12 +380,14 @@ def read_flist(flist_Input):
     flistFile = open(flist_Input, "r")
     fault_list = list()
     
-    for line in flistFile
-        if (line == "\n" | line[0] == "#"):
+    for line in flistFile:
+        if (line == "\n"):
+            continue
+        if (line[0] == "#"):
             continue
         fault_list.append(line)
     
-    flistFile.close[]
+    flistFile.close()
     return fault_list
               
     
@@ -436,10 +438,8 @@ def main():
                 print("File does not exist. \n")
             else:
                 break
+    # saving the fault list        
     flist = read_flist(flistName)
-    for i in flist:
-        print(i)
-    
 
     # Select input file, default is input.txt
     while True:
