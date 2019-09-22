@@ -372,7 +372,23 @@ def readFaults(line, circuit):
     elif(len(line) == 5):
         circuit["wire_"+line[2]][2] = True
         circuit["wire_"+line[2]][3] = line[4]
-return circuit
+    return circuit
+
+# -------------------------------------------------------------------------------------------------------------------- #
+# FUNCTION: read_flist
+def read_flist(flist_Input):
+    flistFile = open(flist_Input, "r")
+    fault_list = list()
+    
+    for line in flistFile
+        if (line == "\n" | line[0] == "#"):
+            continue
+        fault_list.append(line)
+    
+    flistFile.close[]
+    return fault_list
+              
+    
 # -------------------------------------------------------------------------------------------------------------------- #
 # FUNCTION: Main Function
 def main():
@@ -420,6 +436,9 @@ def main():
                 print("File does not exist. \n")
             else:
                 break
+    flist = read_flist(flistName)
+    for i in flist:
+        print(i)
     
 
     # Select input file, default is input.txt
