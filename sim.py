@@ -377,6 +377,23 @@ def readFaults(line, circuit):
     return circuit
 
 # -------------------------------------------------------------------------------------------------------------------- #
+# FUNCTION: read_flist
+def read_flist(flist_Input):
+    flistFile = open(flist_Input, "r")
+    fault_list = list()
+    
+    for line in flistFile:
+        if (line == "\n"):
+            continue
+        if (line[0] == "#"):
+            continue
+        fault_list.append(line)
+    
+    flistFile.close()
+    return fault_list
+              
+
+# -------------------------------------------------------------------------------------------------------------------- #
 # FUNCTION: Main Function
 def main():
     # **************************************************************************************************************** #
@@ -423,7 +440,8 @@ def main():
                 print("File does not exist. \n")
             else:
                 break
-    
+    # saving the fault list        
+    flist = read_flist(flistName)
 
     # Select input file, default is input.txt
     while True:
