@@ -342,7 +342,9 @@ def basic_sim(circuit):
             if not circuit[term][2]:
                 term_has_value = False
                 break
-
+        if circuit[curr][2] == True:
+            continue
+        
         if term_has_value:
             circuit[curr][2] = True
             circuit = gateCalc(circuit, curr)
@@ -390,7 +392,7 @@ def read_flist(flist_Input):
     flistFile.close()
     return fault_list
               
-    
+
 # -------------------------------------------------------------------------------------------------------------------- #
 # FUNCTION: Main Function
 def main():
@@ -549,6 +551,13 @@ def main():
         print(line + " -> " + output + " written into output file. \n")
         outputFile.write(" -> " + output + "\n")
         
+        # After each input line is finished, reset the circuit
+        print("\n *** Now resetting circuit back to unknowns... \n")
+       
+        for key in circuit:
+            if (key[0:5]=="wire_"):
+                circuit[key][2] = False
+                circuit[key][3] = 'U'        
         for fline in flistName:
              # Do nothing else if empty lines, ...
             if (fline == "\n"):
@@ -562,7 +571,7 @@ def main():
             # Removing spaces
             fline = fline.replace(" ", "")
             print("\n ---> Now ready to simulate INPUT = " + line + "@" + fline)
-            circuit = newCircuit
+            #circuit = newCircuit
             circuit = inputRead(circuit, line)
             if circuit == -1:
                 print("INPUT ERROR: INSUFFICIENT BITS")
@@ -593,6 +602,13 @@ def main():
             print("\n *** Summary of simulation: ")
             print(fline+ " @" + line + " -> " + output + " written into output file. \n")
             outputFile.write(" -> " + output + "\n")
+            # After each input line is finished, reset the circuit
+            print("\n *** Now resetting circuit back to unknowns... \n")
+           
+            for key in circuit:
+                if (key[0:5]=="wire_"):
+                    circuit[key][2] = False
+                    circuit[key][3] = 'U'
         
         # After each input line is finished, reset the circuit
         print("\n *** Now resetting circuit back to unknowns... \n")
