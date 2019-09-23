@@ -28,7 +28,6 @@ def netRead(netName):
 
     # Reading in the netlist file line by line
     for line in netFile:
-
         # NOT Reading any empty lines
         if (line == "\n"):
             continue
@@ -366,6 +365,7 @@ def basic_sim(circuit):
 
     return circuit
 
+#this will update the circuit list will the fault found in the line passed into the function
 def readFaults(line, circuit):
     line = line.split("-")
     if(len(line) == 3):
@@ -387,11 +387,68 @@ def read_flist(flist_Input):
             continue
         if (line[0] == "#"):
             continue
+        # Removing the the newlines at the end and then output it to the txt file
+        line = line.replace("\n", "")
+        # Removing spaces
+        line = line.replace(" ", "")
         fault_list.append(line)
     
     flistFile.close()
     return fault_list
-              
+
+#reset the circuit for a new simulation
+def resetCircuit(circuit):
+    for key in circuit:
+        if (key[0:5]=="wire_"):
+            circuit[key][2] = False
+            circuit[key][3] = 'U'
+    return circuit            
+
+#function that will loop through all faults and simulate SA faults <----------------
+def thiswillsimulateSAfaults(flist, circuit, line, newCircuit, outputFile, output):
+    detectedFaults = []
+    #simulate for each SA fault
+    #line will have current TV #aFault will have current SA fault
+    for aFault in flist:
+        print("\n ---> Now ready to simulate INPUT = " + line + "@" + aFault)
+        #circuit = newCircuit
+        circuit = inputRead(circuit, line)
+        if circuit == -1:
+            print("INPUT ERROR: INSUFFICIENT BITS")
+            outputFile.write(" -> INPUT ERROR: INSUFFICIENT BITS" + "\n")
+            # After each input line is finished, reset the netList
+            circuit = newCircuit
+            print("...move on to next input\n")
+            continue
+        elif circuit == -2:
+            print("INPUT ERROR: INVALID INPUT VALUE/S")
+            outputFile.write(" -> INPUT ERROR: INVALID INPUT VALUE/S" + "\n")
+            # After each input line is finished, reset the netList
+            circuit = newCircuit
+            print("...move on to next input\n")
+            continue
+        #simulate faults and calculate output
+        circuit = readFaults(aFault, circuit)
+        circuit = basic_sim(circuit)
+        print("\n *** Finished simulation - resulting circuit: \n")
+        print(circuit)
+        SA_output = "" #create a variable to hold the output of the SA fault
+        for y in circuit["OUTPUTS"][1]:
+            if not circuit[y][2]:
+                SA_output = "NETLIST ERROR: OUTPUT LINE \"" + y + "\" NOT ACCESSED"
+                break
+            SA_output = str(circuit[y][3]) + SA_output
+
+        print("\n *** Summary of simulation: ")
+        print(aFault+ " @" + line + " -> " + SA_output + " written into output file. \n")
+        outputFile.write(aFault + " @" + line + " -> " + SA_output + "\n")
+        if output is not SA_output:
+            detectedFaults.append(aFault)
+        # After each input line is finished, reset the circuit
+        print("\n *** Now resetting circuit back to unknowns... \n")
+        resetCircuit(circuit)
+    return detectedFaults
+
 
 # -------------------------------------------------------------------------------------------------------------------- #
 # FUNCTION: Main Function
@@ -497,7 +554,10 @@ def main():
     fault_out.close()
     # Runs the simulator for each line of the input file
     for line in inputFile:
-        # Initializing output variable each input line
+        # Reset circuit before start
+        print("\n *** Reseting circuit with unknowns... \n")
+        resetCircuit(circuit)
+        # Empty the "good" output value for each TV
         output = ""
 
         # Do nothing else if empty lines, ...
@@ -509,12 +569,12 @@ def main():
 
         # Removing the the newlines at the end and then output it to the txt file
         line = line.replace("\n", "")
-        outputFile.write(line)
+        outputFile.write(line) #write the TV to the output 
 
         # Removing spaces
         line = line.replace(" ", "")
 
-
+        #Getting ready to simulate no faults circuit
         print("\n before processing circuit dictionary...")
         print(circuit)
         print("\n ---> Now ready to simulate INPUT = " + line)
@@ -536,7 +596,7 @@ def main():
             print("...move on to next input\n")
             continue
 
-        
+        #simulate no faults circuit
         circuit = basic_sim(circuit)
         print("\n *** Finished simulation - resulting circuit: \n")
         print(circuit)
@@ -546,78 +606,23 @@ def main():
                 output = "NETLIST ERROR: OUTPUT LINE \"" + y + "\" NOT ACCESSED"
                 break
             output = str(circuit[y][3]) + output
-
+        #^^^^^^^^^"output" will hold the "good" circuit output value
         print("\n *** Summary of simulation: ")
         print(line + " -> " + output + " written into output file. \n")
         outputFile.write(" -> " + output + "\n")
         
         # After each input line is finished, reset the circuit
         print("\n *** Now resetting circuit back to unknowns... \n")
-       
-        for key in circuit:
-            if (key[0:5]=="wire_"):
-                circuit[key][2] = False
-                circuit[key][3] = 'U'        
-        for fline in flistName:
-             # Do nothing else if empty lines, ...
-            if (fline == "\n"):
-                continue
-            # ... or any comments
-            if (fline[0] == "#"):
-                continue
-    
-            # Removing the the newlines at the end and then output it to the txt file
-            fline = fline.replace("\n", "")
-            # Removing spaces
-            fline = fline.replace(" ", "")
-            print("\n ---> Now ready to simulate INPUT = " + line + "@" + fline)
-            #circuit = newCircuit
-            circuit = inputRead(circuit, line)
-            if circuit == -1:
-                print("INPUT ERROR: INSUFFICIENT BITS")
-                outputFile.write(" -> INPUT ERROR: INSUFFICIENT BITS" + "\n")
-                # After each input line is finished, reset the netList
-                circuit = newCircuit
-                print("...move on to next input\n")
-                continue
-            elif circuit == -2:
-                print("INPUT ERROR: INVALID INPUT VALUE/S")
-                outputFile.write(" -> INPUT ERROR: INVALID INPUT VALUE/S" + "\n")
-                # After each input line is finished, reset the netList
-                circuit = newCircuit
-                print("...move on to next input\n")
-                continue
+        resetCircuit(circuit)     
         
-            circuit = readFaults(fline, circuit)
-            circuit = basic_sim(circuit)
-            print("\n *** Finished simulation - resulting circuit: \n")
-            print(circuit)
-            output = ""
-            for y in circuit["OUTPUTS"][1]:
-                if not circuit[y][2]:
-                    output = "NETLIST ERROR: OUTPUT LINE \"" + y + "\" NOT ACCESSED"
-                    break
-                output = str(circuit[y][3]) + output
-    
-            print("\n *** Summary of simulation: ")
-            print(fline+ " @" + line + " -> " + output + " written into output file. \n")
-            outputFile.write(" -> " + output + "\n")
-            # After each input line is finished, reset the circuit
-            print("\n *** Now resetting circuit back to unknowns... \n")
-           
-            for key in circuit:
-                if (key[0:5]=="wire_"):
-                    circuit[key][2] = False
-                    circuit[key][3] = 'U'
+        ########################################################
+        #detectedFaultsforCurrentTV will be updated with all the detected SA faults in the current TV.
+        detectedFaultsforCurrentTV = thiswillsimulateSAfaults(flist, circuit, line, newCircuit, outputFile, output)
         
         # After each input line is finished, reset the circuit
         print("\n *** Now resetting circuit back to unknowns... \n")
-       
-        for key in circuit:
-            if (key[0:5]=="wire_"):
-                circuit[key][2] = False
-                circuit[key][3] = 'U'
-
+        resetCircuit(circuit)
+        
         print("\n circuit after resetting: \n")
         print(circuit)
         print("\n*******************\n")
