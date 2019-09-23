@@ -9,7 +9,6 @@ import os
 # 5. main: The main function
 
 
-
 # -------------------------------------------------------------------------------------------------------------------- #
 # FUNCTION: Reading in the Circuit gate-level netlist file:
 def netRead(netName):
@@ -21,7 +20,7 @@ def netRead(netName):
     outputs = []    # array of the output wires
     gates = []      # array of the gate list
     inputBits = 0   # the number of inputs needed in this given circuit
-
+    faults = []
 
     # main variable to hold the circuit netlist, this is a dictionary in Python, where:
     # key = wire name; value = a list of attributes of the wire
@@ -54,6 +53,10 @@ def netRead(netName):
             line = line.replace("(", "")
             line = line.replace(")", "")
 
+            #part1 add 1 pair of SA's
+            faults.append(line + "-SA-0");
+            faults.append(line + "-SA-1");
+            
             # Format the variable name to wire_*VAR_NAME*
             line = "wire_" + line
 
@@ -81,7 +84,7 @@ def netRead(netName):
             line = line.replace("OUTPUT", "")
             line = line.replace("(", "")
             line = line.replace(")", "")
-
+            
             # Appending to the output array
             outputs.append("wire_" + line)
             continue
@@ -89,7 +92,7 @@ def netRead(netName):
         # Read a gate output wire, and add to the circuit dictionary
         lineSpliced = line.split("=") # splicing the line at the equals sign to get the gate output wire
         gateOut = "wire_" + lineSpliced[0]
-
+        tempOut = lineSpliced[0]
         # Error detection: line being made already exists
         if gateOut in circuit:
             msg = "NETLIST ERROR: GATE OUTPUT LINE \"" + gateOut + "\" ALREADY EXISTS PREVIOUSLY IN NETLIST"
@@ -102,9 +105,17 @@ def netRead(netName):
         lineSpliced = lineSpliced[1].split("(") # splicing the line again at the "("  to get the gate logic
         logic = lineSpliced[0].upper()
 
-
+        
         lineSpliced[1] = lineSpliced[1].replace(")", "")
         terms = lineSpliced[1].split(",")  # Splicing the the line again at each comma to the get the gate terminals
+        
+        #part1 add 1 pair of SA's
+        faults.append(tempOut + "-SA-0");
+        faults.append(tempOut + "-SA-1");
+        for INS in terms:
+            faults.append(tempOut+"-IN-"+ INS+"-SA-0")
+            faults.append(tempOut+"-IN-"+ INS+"-SA-1")
+        
         # Turning each term into an integer before putting it into the circuit dictionary
         terms = ["wire_" + x for x in terms]
 
@@ -121,13 +132,14 @@ def netRead(netName):
     circuit["INPUTS"] = ["Input list", inputs]
     circuit["OUTPUTS"] = ["Output list", outputs]
     circuit["GATES"] = ["Gate list", gates]
-
+    circuit["FAULTS"] = ["Full Faults", faults]
+    
     print("\n bookkeeping items in circuit: \n")
     print(circuit["INPUT_WIDTH"])
     print(circuit["INPUTS"])
     print(circuit["OUTPUTS"])
     print(circuit["GATES"])
-
+    print(circuit["FAULTS"])
 
     return circuit
 
@@ -330,7 +342,9 @@ def basic_sim(circuit):
             if not circuit[term][2]:
                 term_has_value = False
                 break
-
+        if circuit[curr][2] == True:
+            continue
+        
         if term_has_value:
             circuit[curr][2] = True
             circuit = gateCalc(circuit, curr)
@@ -352,6 +366,32 @@ def basic_sim(circuit):
 
     return circuit
 
+def readFaults(line, circuit):
+    line = line.split("-")
+    if(len(line) == 3):
+        circuit["wire_"+line[0]][2] = True
+        circuit["wire_"+line[0]][3] = line[2]
+    elif(len(line) == 5):
+        circuit["wire_"+line[2]][2] = True
+        circuit["wire_"+line[2]][3] = line[4]
+    return circuit
+
+# -------------------------------------------------------------------------------------------------------------------- #
+# FUNCTION: read_flist
+def read_flist(flist_Input):
+    flistFile = open(flist_Input, "r")
+    fault_list = list()
+    
+    for line in flistFile:
+        if (line == "\n"):
+            continue
+        if (line[0] == "#"):
+            continue
+        fault_list.append(line)
+    
+    flistFile.close()
+    return fault_list
+              
 
 # -------------------------------------------------------------------------------------------------------------------- #
 # FUNCTION: Main Function
@@ -385,6 +425,23 @@ def main():
 
     # keep an initial (unassigned any value) copy of the circuit for an easy reset
     newCircuit = circuit
+    
+    # Select fault list file, default is f_list.txt
+    while True:
+        flistName = "f_list.txt"
+        print("\n Read fault: use " + flistName + "?" + " Enter to accept or type filename: ")
+        userInput = input()
+        if userInput == "":
+
+            break
+        else:
+            flistName = os.path.join(script_dir, userInput)
+            if not os.path.isfile(flistName):
+                print("File does not exist. \n")
+            else:
+                break
+    # saving the fault list        
+    flist = read_flist(flistName)
 
     # Select input file, default is input.txt
     while True:
@@ -411,6 +468,17 @@ def main():
         else:
             outputName = os.path.join(script_dir, userInput)
             break
+        
+    # Select full fault file, default is output.txt
+    while True:
+        fault_out = "full_f_list.txt"
+        print("\n Write full fault file: use " + fault_out + "?" + " Enter to accept or type filename: ")
+        userInput = input()
+        if userInput == "":
+            break
+        else:
+            fault_out = os.path.join(script_dir, userInput)
+            break
 
     # Note: UI code;
     # **************************************************************************************************************** #
@@ -418,7 +486,15 @@ def main():
     print("\n *** Simulating the" + inputName + " file and will output in" + outputName + "*** \n")
     inputFile = open(inputName, "r")
     outputFile = open(outputName, "w")
+    fault_out = open(fault_out, "w")
+    flistName = open(flistName, "r")
 
+    fault_out.write("# circuit.bench\n # full SSA fault list\n\n")
+    for f in circuit['FAULTS'][1]:
+        fault_out.write(f + '\n')
+    
+    fault_out.write("\n # total faults: " + repr(len(circuit['FAULTS'][1])))    
+    fault_out.close()
     # Runs the simulator for each line of the input file
     for line in inputFile:
         # Initializing output variable each input line
@@ -437,6 +513,7 @@ def main():
 
         # Removing spaces
         line = line.replace(" ", "")
+
 
         print("\n before processing circuit dictionary...")
         print(circuit)
@@ -459,7 +536,7 @@ def main():
             print("...move on to next input\n")
             continue
 
-
+        
         circuit = basic_sim(circuit)
         print("\n *** Finished simulation - resulting circuit: \n")
         print(circuit)
@@ -473,7 +550,66 @@ def main():
         print("\n *** Summary of simulation: ")
         print(line + " -> " + output + " written into output file. \n")
         outputFile.write(" -> " + output + "\n")
-
+        
+        # After each input line is finished, reset the circuit
+        print("\n *** Now resetting circuit back to unknowns... \n")
+       
+        for key in circuit:
+            if (key[0:5]=="wire_"):
+                circuit[key][2] = False
+                circuit[key][3] = 'U'        
+        for fline in flistName:
+             # Do nothing else if empty lines, ...
+            if (fline == "\n"):
+                continue
+            # ... or any comments
+            if (fline[0] == "#"):
+                continue
+    
+            # Removing the the newlines at the end and then output it to the txt file
+            fline = fline.replace("\n", "")
+            # Removing spaces
+            fline = fline.replace(" ", "")
+            print("\n ---> Now ready to simulate INPUT = " + line + "@" + fline)
+            #circuit = newCircuit
+            circuit = inputRead(circuit, line)
+            if circuit == -1:
+                print("INPUT ERROR: INSUFFICIENT BITS")
+                outputFile.write(" -> INPUT ERROR: INSUFFICIENT BITS" + "\n")
+                # After each input line is finished, reset the netList
+                circuit = newCircuit
+                print("...move on to next input\n")
+                continue
+            elif circuit == -2:
+                print("INPUT ERROR: INVALID INPUT VALUE/S")
+                outputFile.write(" -> INPUT ERROR: INVALID INPUT VALUE/S" + "\n")
+                # After each input line is finished, reset the netList
+                circuit = newCircuit
+                print("...move on to next input\n")
+                continue
+        
+            circuit = readFaults(fline, circuit)
+            circuit = basic_sim(circuit)
+            print("\n *** Finished simulation - resulting circuit: \n")
+            print(circuit)
+            output = ""
+            for y in circuit["OUTPUTS"][1]:
+                if not circuit[y][2]:
+                    output = "NETLIST ERROR: OUTPUT LINE \"" + y + "\" NOT ACCESSED"
+                    break
+                output = str(circuit[y][3]) + output
+    
+            print("\n *** Summary of simulation: ")
+            print(fline+ " @" + line + " -> " + output + " written into output file. \n")
+            outputFile.write(" -> " + output + "\n")
+            # After each input line is finished, reset the circuit
+            print("\n *** Now resetting circuit back to unknowns... \n")
+           
+            for key in circuit:
+                if (key[0:5]=="wire_"):
+                    circuit[key][2] = False
+                    circuit[key][3] = 'U'
+        
         # After each input line is finished, reset the circuit
         print("\n *** Now resetting circuit back to unknowns... \n")
        
@@ -486,7 +622,8 @@ def main():
         print(circuit)
         print("\n*******************\n")
         
-    outputFile.close
+    outputFile.close()
+    
     #exit()
 
 
