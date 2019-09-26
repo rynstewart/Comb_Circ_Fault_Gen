@@ -600,7 +600,7 @@ def main():
         circuit = basic_sim(circuit)
         print("\n *** Finished simulation - resulting circuit: \n")
         print(circuit)
-
+        #Jasmine-this shows output
         for y in circuit["OUTPUTS"][1]:
             if not circuit[y][2]:
                 output = "NETLIST ERROR: OUTPUT LINE \"" + y + "\" NOT ACCESSED"
