@@ -35,7 +35,7 @@ def netRead(netName):
         # Removing spaces and newlines
         line = line.replace(" ","")
         line = line.replace("\n","")
-
+        line = line.upper()
         # NOT Reading any comments
         if (line[0] == "#"):
             continue
@@ -391,6 +391,7 @@ def read_flist(flist_Input):
         line = line.replace("\n", "")
         # Removing spaces
         line = line.replace(" ", "")
+        line = line.upper()
         fault_list.append(line)
     
     flistFile.close()
@@ -405,7 +406,7 @@ def resetCircuit(circuit):
     return circuit            
 
 #function that will loop through all faults and simulate SA faults <----------------
-def thiswillsimulateSAfaults(flist, circuit, line, newCircuit, outputFile, output):
+def sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output):
     detectedFaults = []
     #simulate for each SA fault
     #line will have current TV #aFault will have current SA fault
@@ -617,7 +618,7 @@ def main():
         
         ########################################################
         #detectedFaultsforCurrentTV will be updated with all the detected SA faults in the current TV.
-        detectedFaultsforCurrentTV = thiswillsimulateSAfaults(flist, circuit, line, newCircuit, outputFile, output)
+        current_TV_Detected_Faults = sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output)
         
         # After each input line is finished, reset the circuit
         print("\n *** Now resetting circuit back to unknowns... \n")
