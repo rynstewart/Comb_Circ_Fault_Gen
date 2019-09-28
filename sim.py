@@ -1,6 +1,8 @@
 from __future__ import print_function
 import os
 
+#global variable to hold something-in-somthing-SA-
+unnamedSA = []
 # Function List:
 # 1. netRead: read the benchmark file and build circuit netlist
 # 2. gateCalc: function that will work on the logic of each gate
@@ -53,8 +55,8 @@ def netRead(netName):
             line = line.replace(")", "")
 
             #part1 add 1 pair of SA's
-            faults.append(line + "-SA-0");
-            faults.append(line + "-SA-1");
+            faults.append(line + "-SA-0")
+            faults.append(line + "-SA-1")
             
             # Format the variable name to wire_*VAR_NAME*
             line = "wire_" + line
@@ -109,8 +111,8 @@ def netRead(netName):
         terms = lineSpliced[1].split(",")  # Splicing the the line again at each comma to the get the gate terminals
         
         #part1 add 1 pair of SA's
-        faults.append(tempOut + "-SA-0");
-        faults.append(tempOut + "-SA-1");
+        faults.append(tempOut + "-SA-0")
+        faults.append(tempOut + "-SA-1")
         for INS in terms:
             faults.append(tempOut+"-IN-"+ INS+"-SA-0")
             faults.append(tempOut+"-IN-"+ INS+"-SA-1")
@@ -149,6 +151,15 @@ def gateCalc(circuit, node):
     
     # terminal will contain all the input wires of this logic gate (node)
     terminals = list(circuit[node][1])  
+
+    #temporarily changes a wire's value for -in-SA
+    if len(unnamedSA) > 0:
+        if node == unnamedSA[0]: #if same output wire of gate as SA
+            for term in terminals: #find the input terminal that is SA
+                if term == unnamedSA[1]:
+                    holdTheWire = list(circuit[term]).copy() #copy the wire attributes before change
+                    circuit[term][3] = unnamedSA[2] #change bit value of wire
+                    continue
 
     # If the node is an Inverter gate output, solve and return the output
     if circuit[node][0] == "NOT":
@@ -284,6 +295,7 @@ def gateCalc(circuit, node):
             circuit[node][3] = '0'
         return circuit
 
+    circuit[unnamedSA[1]] = list(holdTheWire).copy()
     # Error detection... should not be able to get at this point
     return circuit[node][0]
 
@@ -341,6 +353,8 @@ def basic_sim(circuit):
             if not circuit[term][2]:
                 term_has_value = False
                 break
+            
+        ##part2 skip this cuz this is a SA wire    
         if circuit[curr][2] == True:
             continue
         
@@ -372,8 +386,9 @@ def readFaults(line, circuit):
         circuit["wire_"+line[0]][2] = True
         circuit["wire_"+line[0]][3] = line[2]
     elif(len(line) == 5):
-        circuit["wire_"+line[2]][2] = True
-        circuit["wire_"+line[2]][3] = line[4]
+        global unnamedSA
+        unnamedSA = []
+        unnamedSA = ["wire_"+line[0], "wire_"+line[2], line[4]]
     return circuit
 
 # -------------------------------------------------------------------------------------------------------------------- #
@@ -443,7 +458,7 @@ def sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output):
         print("\n *** Summary of simulation: ")
         print(aFault+ " @" + line + " -> " + SA_output + " written into output file. \n")
         outputFile.write(aFault + " @" + line + " -> " + SA_output + "\n")
-        if output is not SA_output:
+        if output != SA_output:
             detectedFaults.append(aFault)
         # After each input line is finished, reset the circuit
         print("\n *** Now resetting circuit back to unknowns... \n")
@@ -619,7 +634,7 @@ def main():
         ########################################################
         #detectedFaultsforCurrentTV will be updated with all the detected SA faults in the current TV.
         current_TV_Detected_Faults = sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output)
-        
+        outputFile.write('%s\n' % current_TV_Detected_Faults)
         # After each input line is finished, reset the circuit
         print("\n *** Now resetting circuit back to unknowns... \n")
         resetCircuit(circuit)
