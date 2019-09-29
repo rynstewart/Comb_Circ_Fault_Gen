@@ -537,7 +537,7 @@ def main():
     fs_result.write("#input: " + cktFile+"\n")
     fs_result.write("#input: " + inputName + "\n")
     fs_result.write("#input: " + flistName +"\n")
-    fs_result.write("\n\n\n\n")
+    fs_result.write("\n\n")
 
 
     # Select output file, default is output.txt
@@ -574,7 +574,6 @@ def main():
     fault_out.write("# circuit.bench\n # full SSA fault list\n\n")
     for f in circuit['FAULTS'][1]:
         fault_out.write(f + '\n')
-    #fs_result.write("#faults from fault_out: " + f +"\n") #debug test JEM
     fault_out.write("\n # total faults: " + repr(len(circuit['FAULTS'][1])))    
     fault_out.close()
     tvNumber=0
@@ -596,7 +595,7 @@ def main():
         # Removing the the newlines at the end and then output it to the txt file
         line = line.replace("\n", "")
         outputFile.write(line) #write the TV to the output 
-        fs_result.write("tv"+ str(tvNumber) +"=" + line + "-> need output & good/bad\n") #dubug JEM 
+        
         # Removing spaces
         line = line.replace(" ", "")
 
@@ -644,7 +643,18 @@ def main():
         ########################################################
         #detectedFaultsforCurrentTV will be updated with all the detected SA faults in the current TV.
         current_TV_Detected_Faults = sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output)
-
+        fs_result.write("\ntv"+ str(tvNumber) +"=" + line + "->"+str(output) + " (good)\n") #JEM
+        #getting length of first dimension of list JEM
+        lengthList=len(current_TV_Detected_Faults[0])
+        #iterating through list to print output of TV @ fault JEM
+        fs_result.write("detected:\n")
+        i = 0
+        print("length of list: "+ str(lengthList)+"\n")
+        while i < lengthList:
+            fs_result.write(current_TV_Detected_Faults[0][i]+" -> "+current_TV_Detected_Faults[1][i]+"\n")
+            i=i+1
+        
+        
         outputFile.write('%s\n' % current_TV_Detected_Faults)
         
         # After each input line is finished, reset the circuit
@@ -657,6 +667,13 @@ def main():
         
     outputFile.close()
 
+    #JEM printing summary of faults found DEBUG
+    totalNumFaultsPossible=len(flist)
+    #make list of undetected faults JEM DEBUG
+    
+    #percentFaultsFound=100*float()/float(totalNumFaultsPossible)
+    #fs_result.write("fault coverage: "+ +"/"+str(totalNumFaultsPossible)+"="+ str(percentFaultsFound)"%\n") #JEM 
+    
     #closing fault sim result file
     fs_result.close()
 
