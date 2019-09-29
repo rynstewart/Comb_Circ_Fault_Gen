@@ -423,6 +423,7 @@ def resetCircuit(circuit):
 #function that will loop through all faults and simulate SA faults <----------------
 def sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output):
     detectedFaults = []
+    detectedouputs = []
     #simulate for each SA fault
     #line will have current TV #aFault will have current SA fault
     for aFault in flist:
@@ -460,10 +461,11 @@ def sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output):
         outputFile.write(aFault + " @" + line + " -> " + SA_output + "\n")
         if output != SA_output:
             detectedFaults.append(aFault)
+            detectedouputs.append(SA_output)
         # After each input line is finished, reset the circuit
         print("\n *** Now resetting circuit back to unknowns... \n")
         resetCircuit(circuit)
-    return detectedFaults
+    return [detectedFaults,detectedouputs]
 
 
 # -------------------------------------------------------------------------------------------------------------------- #
