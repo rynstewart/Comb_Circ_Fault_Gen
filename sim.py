@@ -530,6 +530,13 @@ def main():
                 print("File does not exist. \n")
             else:
                 break
+ #JEM-Creating fault sim result file to write,read, append to
+    fs_result = open("fault_sim_result.txt","w+")
+    fs_result.write("#input: " + cktFile+"\n")
+    fs_result.write("#input: " + inputName + "\n")
+    fs_result.write("#input: " + flistName +"\n")
+    fs_result.write("\n\n\n\n")
+
 
     # Select output file, default is output.txt
     while True:
@@ -565,9 +572,10 @@ def main():
     fault_out.write("# circuit.bench\n # full SSA fault list\n\n")
     for f in circuit['FAULTS'][1]:
         fault_out.write(f + '\n')
-    
+    #fs_result.write("#faults from fault_out: " + f +"\n") #debug test JEM
     fault_out.write("\n # total faults: " + repr(len(circuit['FAULTS'][1])))    
     fault_out.close()
+    tvNumber=0
     # Runs the simulator for each line of the input file
     for line in inputFile:
         # Reset circuit before start
@@ -575,7 +583,7 @@ def main():
         resetCircuit(circuit)
         # Empty the "good" output value for each TV
         output = ""
-
+        tvNumber=tvNumber+1
         # Do nothing else if empty lines, ...
         if (line == "\n"):
             continue
@@ -586,7 +594,7 @@ def main():
         # Removing the the newlines at the end and then output it to the txt file
         line = line.replace("\n", "")
         outputFile.write(line) #write the TV to the output 
-
+        fs_result.write("tv"+ str(tvNumber) +"=" + line + "-> need output & good/bad\n") #dubug JEM 
         # Removing spaces
         line = line.replace(" ", "")
 
@@ -634,7 +642,9 @@ def main():
         ########################################################
         #detectedFaultsforCurrentTV will be updated with all the detected SA faults in the current TV.
         current_TV_Detected_Faults = sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output)
+
         outputFile.write('%s\n' % current_TV_Detected_Faults)
+        
         # After each input line is finished, reset the circuit
         print("\n *** Now resetting circuit back to unknowns... \n")
         resetCircuit(circuit)
@@ -644,7 +654,10 @@ def main():
         print("\n*******************\n")
         
     outputFile.close()
-    
+
+    #closing fault sim result file
+    fs_result.close()
+
     #exit()
 
 
