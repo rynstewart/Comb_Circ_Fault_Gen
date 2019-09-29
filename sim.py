@@ -152,6 +152,7 @@ def gateCalc(circuit, node):
     # terminal will contain all the input wires of this logic gate (node)
     terminals = list(circuit[node][1])  
 
+    holdTheWire = "Undefined"
     #temporarily changes a wire's value for -in-SA
     if len(unnamedSA) > 0:
         if node == unnamedSA[0]: #if same output wire of gate as SA
@@ -170,7 +171,9 @@ def gateCalc(circuit, node):
         elif circuit[terminals[0]][3] == "U":
             circuit[node][3] = "U"
         else:  # Should not be able to come here
+            circuit = copycircuit(circuit, holdTheWire)
             return -1
+        circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
     # If the node is an AND gate output, solve and return the output
@@ -192,6 +195,7 @@ def gateCalc(circuit, node):
         if unknownTerm:
             if circuit[node][3] == '1':
                 circuit[node][3] = "U"
+        circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
     # If the node is a NAND gate output, solve and return the output
@@ -214,6 +218,7 @@ def gateCalc(circuit, node):
         if unknownTerm:
             if circuit[node][3] == '0':
                 circuit[node][3] = "U"
+        circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
     # If the node is an OR gate output, solve and return the output
@@ -234,6 +239,7 @@ def gateCalc(circuit, node):
         if unknownTerm:
             if circuit[node][3] == '0':
                 circuit[node][3] = "U"
+        circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
     # If the node is an NOR gate output, solve and return the output
@@ -253,6 +259,7 @@ def gateCalc(circuit, node):
         if unknownTerm:
             if circuit[node][3] == '1':
                 circuit[node][3] = "U"
+        circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
     # If the node is an XOR gate output, solve and return the output
@@ -266,6 +273,7 @@ def gateCalc(circuit, node):
                 count += 1  # For each 1 bit, add one count
             if circuit[term][3] == "U":
                 circuit[node][3] = "U"
+                circuit = copycircuit(circuit, holdTheWire)
                 return circuit
 
         # check how many 1's we counted
@@ -273,6 +281,7 @@ def gateCalc(circuit, node):
             circuit[node][3] = '1'
         else:  # Otherwise, the output is equal to how many 1's there are
             circuit[node][3] = '0'
+        circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
     # If the node is an XNOR gate output, solve and return the output
@@ -286,6 +295,7 @@ def gateCalc(circuit, node):
                 count += 1  # For each 1 bit, add one count
             if circuit[term][3] == "U":
                 circuit[node][3] = "U"
+                circuit = copycircuit(circuit, holdTheWire)
                 return circuit
 
         # check how many 1's we counted
@@ -293,13 +303,20 @@ def gateCalc(circuit, node):
             circuit[node][3] = '1'
         else:  # Otherwise, the output is equal to how many 1's there are
             circuit[node][3] = '0'
+        circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
-    circuit[unnamedSA[1]] = list(holdTheWire).copy()
+    circuit = copycircuit(circuit, holdTheWire)
     # Error detection... should not be able to get at this point
     return circuit[node][0]
 
-
+#function used above to clear the global with something-in-something-sA and copy back to circuit after simulation
+def copycircuit(circuit, holdTheWire):
+    global unnamedSA
+    if holdTheWire != "Undefined":
+        circuit[unnamedSA[1]] = list(holdTheWire).copy()
+    return circuit
+    
 # -------------------------------------------------------------------------------------------------------------------- #
 # FUNCTION: Updating the circuit dictionary with the input line, and also resetting the gates and output lines
 def inputRead(circuit, line):
@@ -376,7 +393,8 @@ def basic_sim(circuit):
         else:
             # If the terminals have not been accessed yet, append the current node at the end of the queue
             queue.append(curr)
-
+    global unnamedSA
+    unnamedSA = []
     return circuit
 
 #this will update the circuit list will the fault found in the line passed into the function
