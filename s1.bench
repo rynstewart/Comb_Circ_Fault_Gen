@@ -1,0 +1,26 @@
+# MUX
+# 5 inputs
+# 2 outputs
+# 0 inverter
+# 6 gates ( 6 NANDs )
+
+# INPUTS:
+INPUT(l)
+INPUT(m)
+INPUT(d)
+INPUT(c)
+INPUT(b)
+INPUT(a)
+
+
+# OUTPUTS:
+OUTPUT(y)
+
+# GATES:
+mn = NOT(m)
+ln = NOT(l)
+ao = AND(a, mn, ln)
+bo = AND(b, mn, l)
+co = AND(c, m, ln)
+do = AND(d, m, l)
+y = OR(ao, bo, co, do)
