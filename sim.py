@@ -571,7 +571,7 @@ def main():
     fault_out.write("# circuit.bench\n #fullSSA fault list\n\n")
     for f in circuit['FAULTS'][1]:
         fault_out.write(f + '\n')
-    fault_out.write("\n # total faults: " + repr(len(circuit['FAULTS'][1])))    
+    fault_out.write("\n #total faults: " + repr(len(circuit['FAULTS'][1])))    
     fault_out.close()
 
     inputFile = open(inputName, "r")
