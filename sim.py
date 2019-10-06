@@ -290,9 +290,9 @@ def gateCalc(circuit, node):
 
         # check how many 1's we counted
         if count % 2 == 1:  # if more than one 1, we know it's going to be 0.
-            circuit[node][3] = '1'
-        else:  # Otherwise, the output is equal to how many 1's there are
             circuit[node][3] = '0'
+        else:  # Otherwise, the output is equal to how many 1's there are
+            circuit[node][3] = '1'
         return circuit
 
     circuit[unnamedSA[1]] = list(holdTheWire).copy()
