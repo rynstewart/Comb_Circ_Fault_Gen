@@ -1,0 +1,30 @@
+#input: circuit_mux.bench
+#input: input_mux.txt
+#input: f_list_mux.txt
+
+
+tv1 = 100010 -> 11 (good)
+detected:
+B-SA-0:  100010 -> 00
+K-IN-H-SA-1:  100010 -> 01
+
+tv2 = 010001 -> 10 (good)
+detected:
+G-IN-C-SA-1:  010001 -> 11
+
+tv3 = 111000 -> 10 (good)
+detected:
+G-IN-C-SA-1:  111000 -> 00
+
+
+total detected faults: 3
+
+
+undetected faults: 4
+A-SA-0
+A-SA-1
+G-IN-C-SA-0
+K-IN-H-SA-0
+
+
+fault coverage: 3/7 = 42.857142857142854% 

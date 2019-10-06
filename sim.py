@@ -300,9 +300,9 @@ def gateCalc(circuit, node):
 
         # check how many 1's we counted
         if count % 2 == 1:  # if more than one 1, we know it's going to be 0.
-            circuit[node][3] = '1'
-        else:  # Otherwise, the output is equal to how many 1's there are
             circuit[node][3] = '0'
+        else:  # Otherwise, the output is equal to how many 1's there are
+            circuit[node][3] = '1'
         circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
@@ -535,7 +535,7 @@ def main():
                 break
     # saving the fault list        
     flist = read_flist(flistName)
-
+    totalNumFaultsPossible=len(flist)
     # Select input file, default is input.txt
     while True:
         inputName = "input.txt"
@@ -555,7 +555,7 @@ def main():
     fs_result.write("#input: " + cktFile+"\n")
     fs_result.write("#input: " + inputName + "\n")
     fs_result.write("#input: " + flistName +"\n")
-    fs_result.write("\n\n\n\n")
+    fs_result.write("\n")
 
 
     # Select output file, default is output.txt
@@ -584,18 +584,22 @@ def main():
     # **************************************************************************************************************** #
 
     print("\n *** Simulating the" + inputName + " file and will output in" + outputName + "*** \n")
-    inputFile = open(inputName, "r")
-    outputFile = open(outputName, "w")
-    fault_out = open(fault_out, "w")
-    flistName = open(flistName, "r")
 
-    fault_out.write("# circuit.bench\n # full SSA fault list\n\n")
+    fault_out = open(fault_out, "w")
+    fault_out.write("# circuit.bench\n #fullSSA fault list\n\n")
     for f in circuit['FAULTS'][1]:
         fault_out.write(f + '\n')
-    #fs_result.write("#faults from fault_out: " + f +"\n") #debug test JEM
-    fault_out.write("\n # total faults: " + repr(len(circuit['FAULTS'][1])))    
+    fault_out.write("\n #total faults: " + repr(len(circuit['FAULTS'][1])))    
     fault_out.close()
+
+    inputFile = open(inputName, "r")
+    outputFile = open(outputName, "w")
+    flistName = open(flistName, "r")
     tvNumber=0
+
+    #initializing list to add faults found
+    faults_Found= []
+
     # Runs the simulator for each line of the input file
     for line in inputFile:
         # Reset circuit before start
@@ -614,7 +618,7 @@ def main():
         # Removing the the newlines at the end and then output it to the txt file
         line = line.replace("\n", "")
         outputFile.write(line) #write the TV to the output 
-        fs_result.write("tv"+ str(tvNumber) +"=" + line + "-> need output & good/bad\n") #dubug JEM 
+        
         # Removing spaces
         line = line.replace(" ", "")
 
@@ -659,10 +663,30 @@ def main():
         print("\n *** Now resetting circuit back to unknowns... \n")
         resetCircuit(circuit)     
         
+        
         ########################################################
         #detectedFaultsforCurrentTV will be updated with all the detected SA faults in the current TV.
         current_TV_Detected_Faults = sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output)
-
+        fs_result.write("\ntv"+ str(tvNumber) +" = " + line + " -> "+str(output) + " (good)\n") #JEM
+        #getting length of first dimension of list JEM
+        lengthList=len(current_TV_Detected_Faults[0])
+        #iterating through list to print output of TV @ fault JEM
+        fs_result.write("detected:\n")
+        i = 0
+        print("length of list: "+ str(lengthList)+"\n")
+        while i < lengthList:
+            fs_result.write(current_TV_Detected_Faults[0][i]+":  "+line +" -> "+current_TV_Detected_Faults[1][i]+"\n")
+            #print("current_detected_faults[0][i]="+current_TV_Detected_Faults[0][i]+"\n") debug
+            #print("faults found list now:") debug
+            #print(*faults_Found, sep =",") debug
+            if (current_TV_Detected_Faults[0][i] not in faults_Found):
+                #add to faults_Found JEM DEBUG
+                faults_Found.append(current_TV_Detected_Faults[0][i])
+                #print("current_detected_faults[0][i]="+current_TV_Detected_Faults[0][i]+"\n") debug
+                #print("faults found list now:")debug
+                #print(*faults_Found, sep =",")debug
+            i=i+1
+        
         outputFile.write('%s\n' % current_TV_Detected_Faults)
         
         # After each input line is finished, reset the circuit
@@ -675,6 +699,28 @@ def main():
         
     outputFile.close()
 
+    #JEM printing summary of faults found 
+    #delete flist as u find faults/add to faults_Found
+    for i in faults_Found:
+        if (i in flist):
+                #add to faults_Found JEM DEBUG
+                flist.remove(i)
+    undetectedFaults=len(flist)
+    total_faults_found=len(faults_Found)
+    #make list of undetected faults JEM
+    fs_result.write("\n\ntotal detected faults: "+str(total_faults_found)+"\n")
+    #for detected_fault in faults_Found: #debug
+        #fs_result.write('%s\n' % detected_fault) #debug
+    #print(*faults_Found, sep ="\n") debug
+    
+    fs_result.write("\n\nundetected faults: "+str(undetectedFaults)+"\n")
+    for undetected_fault in flist:
+        fs_result.write('%s\n' % undetected_fault)
+    #fs_result.write(*flist, sep ="\n")
+    #print fault list JEM DEBUG
+    percentFaultsFound=100*float(total_faults_found)/float(totalNumFaultsPossible)
+    fs_result.write("\n\nfault coverage: "+ str(total_faults_found)+"/"+str(totalNumFaultsPossible)+" = "+str(percentFaultsFound)+ "% \n") #JEM 
+    
     #closing fault sim result file
     fs_result.close()
 
