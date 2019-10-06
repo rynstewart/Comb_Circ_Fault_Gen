@@ -176,6 +176,20 @@ def gateCalc(circuit, node):
         circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
+    # If the node is an Buffer gate output, solve and return the output
+    elif circuit[node][0] == "BUFF":
+        if circuit[terminals[0]][3] == '0':
+            circuit[node][3] = '0'
+        elif circuit[terminals[0]][3] == '1':
+            circuit[node][3] = '1'
+        elif circuit[terminals[0]][3] == "U":
+            circuit[node][3] = "U"
+        else:  # Should not be able to come here
+            circuit = copycircuit(circuit, holdTheWire)
+            return -1
+        circuit = copycircuit(circuit, holdTheWire)
+        return circuit
+        
     # If the node is an AND gate output, solve and return the output
     elif circuit[node][0] == "AND":
         # Initialize the output to 1
@@ -384,9 +398,9 @@ def basic_sim(circuit):
                 print(circuit)
                 return circuit
 
-            print("Progress: updating " + curr + " = " + circuit[curr][3] + " as the output of " + circuit[curr][0] + " for:")
-            for term in circuit[curr][1]:
-                print(term + " = " + circuit[term][3])
+            #print("Progress: updating " + curr + " = " + circuit[curr][3] + " as the output of " + circuit[curr][0] + " for:")
+            #for term in circuit[curr][1]:
+            #    print(term + " = " + circuit[term][3])
             #print("\nPress Enter to Continue...")
             #input()
 
@@ -445,7 +459,7 @@ def sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output):
     #simulate for each SA fault
     #line will have current TV #aFault will have current SA fault
     for aFault in flist:
-        print("\n ---> Now ready to simulate INPUT = " + line + "@" + aFault)
+        #print("\n ---> Now ready to simulate INPUT = " + line + "@" + aFault)
         #circuit = newCircuit
         circuit = inputRead(circuit, line)
         if circuit == -1:
@@ -465,8 +479,8 @@ def sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output):
         #simulate faults and calculate output
         circuit = readFaults(aFault, circuit)
         circuit = basic_sim(circuit)
-        print("\n *** Finished simulation - resulting circuit: \n")
-        print(circuit)
+        #print("\n *** Finished simulation - resulting circuit: \n")
+        #print(circuit)
         SA_output = "" #create a variable to hold the output of the SA fault
         for y in circuit["OUTPUTS"][1]:
             if not circuit[y][2]:
@@ -474,14 +488,14 @@ def sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output):
                 break
             SA_output = str(circuit[y][3]) + SA_output
 
-        print("\n *** Summary of simulation: ")
-        print(aFault+ " @" + line + " -> " + SA_output + " written into output file. \n")
+        #print("\n *** Summary of simulation: ")
+        #print(aFault+ " @" + line + " -> " + SA_output + " written into output file. \n")
         outputFile.write(aFault + " @" + line + " -> " + SA_output + "\n")
         if output != SA_output:
             detectedFaults.append(aFault)
             detectedouputs.append(SA_output)
         # After each input line is finished, reset the circuit
-        print("\n *** Now resetting circuit back to unknowns... \n")
+        #print("\n *** Now resetting circuit back to unknowns... \n")
         resetCircuit(circuit)
     return [detectedFaults,detectedouputs]
 
@@ -603,8 +617,8 @@ def main():
     # Runs the simulator for each line of the input file
     for line in inputFile:
         # Reset circuit before start
-        print("\n *** Reseting circuit with unknowns... \n")
         resetCircuit(circuit)
+
         # Empty the "good" output value for each TV
         output = ""
         tvNumber=tvNumber+1
@@ -623,11 +637,11 @@ def main():
         line = line.replace(" ", "")
 
         #Getting ready to simulate no faults circuit
-        print("\n before processing circuit dictionary...")
-        print(circuit)
+        #print("\n before processing circuit dictionary...")
+        #print(circuit)
         print("\n ---> Now ready to simulate INPUT = " + line)
         circuit = inputRead(circuit, line)
-        print(circuit)
+        #print(circuit)
 
         if circuit == -1:
             print("INPUT ERROR: INSUFFICIENT BITS")
@@ -646,8 +660,8 @@ def main():
 
         #simulate no faults circuit
         circuit = basic_sim(circuit)
-        print("\n *** Finished simulation - resulting circuit: \n")
-        print(circuit)
+        #print("\n *** Finished simulation - resulting circuit: \n")
+        #print(circuit)
         #Jasmine-this shows output
         for y in circuit["OUTPUTS"][1]:
             if not circuit[y][2]:
@@ -655,12 +669,11 @@ def main():
                 break
             output = str(circuit[y][3]) + output
         #^^^^^^^^^"output" will hold the "good" circuit output value
-        print("\n *** Summary of simulation: ")
-        print(line + " -> " + output + " written into output file. \n")
+        #print("\n *** Summary of simulation: ")
+        #print(line + " -> " + output + " written into output file. \n")
         outputFile.write(" -> " + output + "\n")
         
         # After each input line is finished, reset the circuit
-        print("\n *** Now resetting circuit back to unknowns... \n")
         resetCircuit(circuit)     
         
         
@@ -690,11 +703,11 @@ def main():
         outputFile.write('%s\n' % current_TV_Detected_Faults)
         
         # After each input line is finished, reset the circuit
-        print("\n *** Now resetting circuit back to unknowns... \n")
+        #print("\n *** Now resetting circuit back to unknowns... \n")
         resetCircuit(circuit)
         
-        print("\n circuit after resetting: \n")
-        print(circuit)
+        #print("\n circuit after resetting: \n")
+        #print(circuit)
         print("\n*******************\n")
         
     outputFile.close()
