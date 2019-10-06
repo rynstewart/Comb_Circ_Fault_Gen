@@ -566,16 +566,17 @@ def main():
     # **************************************************************************************************************** #
 
     print("\n *** Simulating the" + inputName + " file and will output in" + outputName + "*** \n")
-    inputFile = open(inputName, "r")
-    outputFile = open(outputName, "w")
-    fault_out = open(fault_out, "w")
-    flistName = open(flistName, "r")
 
-    fault_out.write("# circuit.bench\n # full SSA fault list\n\n")
+    fault_out = open(fault_out, "w")
+    fault_out.write("# circuit.bench\n #fullSSA fault list\n\n")
     for f in circuit['FAULTS'][1]:
         fault_out.write(f + '\n')
     fault_out.write("\n # total faults: " + repr(len(circuit['FAULTS'][1])))    
     fault_out.close()
+
+    inputFile = open(inputName, "r")
+    outputFile = open(outputName, "w")
+    flistName = open(flistName, "r")
     tvNumber=0
 
     #initializing list to add faults found
