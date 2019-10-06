@@ -525,10 +525,24 @@ def main():
             else:
                 break
 
-    print("\n Reading " + cktFile + " ... \n")
     circuit = netRead(cktFile)
-    print("\n Finished processing benchmark file and built netlist dictionary: \n")
-    print(circuit)
+
+    # Select full fault file, default is output.txt
+    while True:
+        fault_out = "full_f_list.txt"
+        print("\n Write full fault file: use " + fault_out + "?" + " Enter to accept or type filename: ")
+        userInput = input()
+        if userInput == "":
+            break
+        else:
+            fault_out = os.path.join(script_dir, userInput)
+            break
+    fault_out = open(fault_out, "w")
+    fault_out.write("# circuit.bench\n#fullSSA fault list\n\n")
+    for f in circuit['FAULTS'][1]:
+        fault_out.write(f + '\n')
+    fault_out.write("\n#total faults: " + repr(len(circuit['FAULTS'][1])))    
+    fault_out.close()
 
     # keep an initial (unassigned any value) copy of the circuit for an easy reset
     newCircuit = circuit
@@ -536,7 +550,7 @@ def main():
     # Select fault list file, default is f_list.txt
     while True:
         flistName = "f_list.txt"
-        print("\n Read fault: use " + flistName + "?" + " Enter to accept or type filename: ")
+        print("\n Read fault: use " + flistName + "? Or Enter full_f_list.txt to use full fault list. " + " Enter to accept or type filename: ")
         userInput = input()
         if userInput == "":
 
@@ -583,28 +597,13 @@ def main():
             outputName = os.path.join(script_dir, userInput)
             break
         
-    # Select full fault file, default is output.txt
-    while True:
-        fault_out = "full_f_list.txt"
-        print("\n Write full fault file: use " + fault_out + "?" + " Enter to accept or type filename: ")
-        userInput = input()
-        if userInput == "":
-            break
-        else:
-            fault_out = os.path.join(script_dir, userInput)
-            break
 
     # Note: UI code;
     # **************************************************************************************************************** #
 
     print("\n *** Simulating the" + inputName + " file and will output in" + outputName + "*** \n")
 
-    fault_out = open(fault_out, "w")
-    fault_out.write("# circuit.bench\n#fullSSA fault list\n\n")
-    for f in circuit['FAULTS'][1]:
-        fault_out.write(f + '\n')
-    fault_out.write("\n#total faults: " + repr(len(circuit['FAULTS'][1])))    
-    fault_out.close()
+
 
     inputFile = open(inputName, "r")
     outputFile = open(outputName, "w")
