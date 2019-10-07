@@ -152,6 +152,7 @@ def gateCalc(circuit, node):
     # terminal will contain all the input wires of this logic gate (node)
     terminals = list(circuit[node][1])  
 
+    holdTheWire = "Undefined"
     #temporarily changes a wire's value for -in-SA
     if len(unnamedSA) > 0:
         if node == unnamedSA[0]: #if same output wire of gate as SA
@@ -170,9 +171,25 @@ def gateCalc(circuit, node):
         elif circuit[terminals[0]][3] == "U":
             circuit[node][3] = "U"
         else:  # Should not be able to come here
+            circuit = copycircuit(circuit, holdTheWire)
             return -1
+        circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
+    # If the node is an Buffer gate output, solve and return the output
+    elif circuit[node][0] == "BUFF":
+        if circuit[terminals[0]][3] == '0':
+            circuit[node][3] = '0'
+        elif circuit[terminals[0]][3] == '1':
+            circuit[node][3] = '1'
+        elif circuit[terminals[0]][3] == "U":
+            circuit[node][3] = "U"
+        else:  # Should not be able to come here
+            circuit = copycircuit(circuit, holdTheWire)
+            return -1
+        circuit = copycircuit(circuit, holdTheWire)
+        return circuit
+        
     # If the node is an AND gate output, solve and return the output
     elif circuit[node][0] == "AND":
         # Initialize the output to 1
@@ -192,6 +209,7 @@ def gateCalc(circuit, node):
         if unknownTerm:
             if circuit[node][3] == '1':
                 circuit[node][3] = "U"
+        circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
     # If the node is a NAND gate output, solve and return the output
@@ -214,6 +232,7 @@ def gateCalc(circuit, node):
         if unknownTerm:
             if circuit[node][3] == '0':
                 circuit[node][3] = "U"
+        circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
     # If the node is an OR gate output, solve and return the output
@@ -234,6 +253,7 @@ def gateCalc(circuit, node):
         if unknownTerm:
             if circuit[node][3] == '0':
                 circuit[node][3] = "U"
+        circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
     # If the node is an NOR gate output, solve and return the output
@@ -253,6 +273,7 @@ def gateCalc(circuit, node):
         if unknownTerm:
             if circuit[node][3] == '1':
                 circuit[node][3] = "U"
+        circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
     # If the node is an XOR gate output, solve and return the output
@@ -266,6 +287,7 @@ def gateCalc(circuit, node):
                 count += 1  # For each 1 bit, add one count
             if circuit[term][3] == "U":
                 circuit[node][3] = "U"
+                circuit = copycircuit(circuit, holdTheWire)
                 return circuit
 
         # check how many 1's we counted
@@ -273,6 +295,7 @@ def gateCalc(circuit, node):
             circuit[node][3] = '1'
         else:  # Otherwise, the output is equal to how many 1's there are
             circuit[node][3] = '0'
+        circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
     # If the node is an XNOR gate output, solve and return the output
@@ -286,20 +309,28 @@ def gateCalc(circuit, node):
                 count += 1  # For each 1 bit, add one count
             if circuit[term][3] == "U":
                 circuit[node][3] = "U"
+                circuit = copycircuit(circuit, holdTheWire)
                 return circuit
 
         # check how many 1's we counted
         if count % 2 == 1:  # if more than one 1, we know it's going to be 0.
-            circuit[node][3] = '1'
-        else:  # Otherwise, the output is equal to how many 1's there are
             circuit[node][3] = '0'
+        else:  # Otherwise, the output is equal to how many 1's there are
+            circuit[node][3] = '1'
+        circuit = copycircuit(circuit, holdTheWire)
         return circuit
 
-    circuit[unnamedSA[1]] = list(holdTheWire).copy()
+    circuit = copycircuit(circuit, holdTheWire)
     # Error detection... should not be able to get at this point
     return circuit[node][0]
 
-
+#function used above to clear the global with something-in-something-sA and copy back to circuit after simulation
+def copycircuit(circuit, holdTheWire):
+    global unnamedSA
+    if holdTheWire != "Undefined":
+        circuit[unnamedSA[1]] = list(holdTheWire).copy()
+    return circuit
+    
 # -------------------------------------------------------------------------------------------------------------------- #
 # FUNCTION: Updating the circuit dictionary with the input line, and also resetting the gates and output lines
 def inputRead(circuit, line):
@@ -367,16 +398,17 @@ def basic_sim(circuit):
                 print(circuit)
                 return circuit
 
-            print("Progress: updating " + curr + " = " + circuit[curr][3] + " as the output of " + circuit[curr][0] + " for:")
-            for term in circuit[curr][1]:
-                print(term + " = " + circuit[term][3])
+            #print("Progress: updating " + curr + " = " + circuit[curr][3] + " as the output of " + circuit[curr][0] + " for:")
+            #for term in circuit[curr][1]:
+            #    print(term + " = " + circuit[term][3])
             #print("\nPress Enter to Continue...")
             #input()
 
         else:
             # If the terminals have not been accessed yet, append the current node at the end of the queue
             queue.append(curr)
-
+    global unnamedSA
+    unnamedSA = []
     return circuit
 
 #this will update the circuit list will the fault found in the line passed into the function
@@ -427,7 +459,7 @@ def sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output):
     #simulate for each SA fault
     #line will have current TV #aFault will have current SA fault
     for aFault in flist:
-        print("\n ---> Now ready to simulate INPUT = " + line + "@" + aFault)
+        #print("\n ---> Now ready to simulate INPUT = " + line + "@" + aFault)
         #circuit = newCircuit
         circuit = inputRead(circuit, line)
         if circuit == -1:
@@ -447,8 +479,8 @@ def sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output):
         #simulate faults and calculate output
         circuit = readFaults(aFault, circuit)
         circuit = basic_sim(circuit)
-        print("\n *** Finished simulation - resulting circuit: \n")
-        print(circuit)
+        #print("\n *** Finished simulation - resulting circuit: \n")
+        #print(circuit)
         SA_output = "" #create a variable to hold the output of the SA fault
         for y in circuit["OUTPUTS"][1]:
             if not circuit[y][2]:
@@ -456,14 +488,14 @@ def sa_Fault_Simulator(flist, circuit, line, newCircuit, outputFile, output):
                 break
             SA_output = str(circuit[y][3]) + SA_output
 
-        print("\n *** Summary of simulation: ")
-        print(aFault+ " @" + line + " -> " + SA_output + " written into output file. \n")
+        #print("\n *** Summary of simulation: ")
+        #print(aFault+ " @" + line + " -> " + SA_output + " written into output file. \n")
         outputFile.write(aFault + " @" + line + " -> " + SA_output + "\n")
         if output != SA_output:
             detectedFaults.append(aFault)
             detectedouputs.append(SA_output)
         # After each input line is finished, reset the circuit
-        print("\n *** Now resetting circuit back to unknowns... \n")
+        #print("\n *** Now resetting circuit back to unknowns... \n")
         resetCircuit(circuit)
     return [detectedFaults,detectedouputs]
 
@@ -493,10 +525,24 @@ def main():
             else:
                 break
 
-    print("\n Reading " + cktFile + " ... \n")
     circuit = netRead(cktFile)
-    print("\n Finished processing benchmark file and built netlist dictionary: \n")
-    print(circuit)
+
+    # Select full fault file, default is output.txt
+    while True:
+        fault_out = "full_f_list.txt"
+        print("\n Write full fault file: use " + fault_out + "?" + " Enter to accept or type filename: ")
+        userInput = input()
+        if userInput == "":
+            break
+        else:
+            fault_out = os.path.join(script_dir, userInput)
+            break
+    fault_out = open(fault_out, "w")
+    fault_out.write("# circuit.bench\n#fullSSA fault list\n\n")
+    for f in circuit['FAULTS'][1]:
+        fault_out.write(f + '\n')
+    fault_out.write("\n#total faults: " + repr(len(circuit['FAULTS'][1])))    
+    fault_out.close()
 
     # keep an initial (unassigned any value) copy of the circuit for an easy reset
     newCircuit = circuit
@@ -504,7 +550,7 @@ def main():
     # Select fault list file, default is f_list.txt
     while True:
         flistName = "f_list.txt"
-        print("\n Read fault: use " + flistName + "?" + " Enter to accept or type filename: ")
+        print("\n Read fault: use " + flistName + "? Or Enter full_f_list.txt to use full fault list. " + " Enter to accept or type filename: ")
         userInput = input()
         if userInput == "":
 
@@ -551,31 +597,17 @@ def main():
             outputName = os.path.join(script_dir, userInput)
             break
         
-    # Select full fault file, default is output.txt
-    while True:
-        fault_out = "full_f_list.txt"
-        print("\n Write full fault file: use " + fault_out + "?" + " Enter to accept or type filename: ")
-        userInput = input()
-        if userInput == "":
-            break
-        else:
-            fault_out = os.path.join(script_dir, userInput)
-            break
 
     # Note: UI code;
     # **************************************************************************************************************** #
 
     print("\n *** Simulating the" + inputName + " file and will output in" + outputName + "*** \n")
+
+
+
     inputFile = open(inputName, "r")
     outputFile = open(outputName, "w")
-    fault_out = open(fault_out, "w")
     flistName = open(flistName, "r")
-
-    fault_out.write("# circuit.bench\n # full SSA fault list\n\n")
-    for f in circuit['FAULTS'][1]:
-        fault_out.write(f + '\n')
-    fault_out.write("\n # total faults: " + repr(len(circuit['FAULTS'][1])))    
-    fault_out.close()
     tvNumber=0
 
     #initializing list to add faults found
@@ -584,8 +616,8 @@ def main():
     # Runs the simulator for each line of the input file
     for line in inputFile:
         # Reset circuit before start
-        print("\n *** Reseting circuit with unknowns... \n")
         resetCircuit(circuit)
+
         # Empty the "good" output value for each TV
         output = ""
         tvNumber=tvNumber+1
@@ -604,11 +636,11 @@ def main():
         line = line.replace(" ", "")
 
         #Getting ready to simulate no faults circuit
-        print("\n before processing circuit dictionary...")
-        print(circuit)
+        #print("\n before processing circuit dictionary...")
+        #print(circuit)
         print("\n ---> Now ready to simulate INPUT = " + line)
         circuit = inputRead(circuit, line)
-        print(circuit)
+        #print(circuit)
 
         if circuit == -1:
             print("INPUT ERROR: INSUFFICIENT BITS")
@@ -627,8 +659,8 @@ def main():
 
         #simulate no faults circuit
         circuit = basic_sim(circuit)
-        print("\n *** Finished simulation - resulting circuit: \n")
-        print(circuit)
+        #print("\n *** Finished simulation - resulting circuit: \n")
+        #print(circuit)
         #Jasmine-this shows output
         for y in circuit["OUTPUTS"][1]:
             if not circuit[y][2]:
@@ -636,12 +668,11 @@ def main():
                 break
             output = str(circuit[y][3]) + output
         #^^^^^^^^^"output" will hold the "good" circuit output value
-        print("\n *** Summary of simulation: ")
-        print(line + " -> " + output + " written into output file. \n")
+        #print("\n *** Summary of simulation: ")
+        #print(line + " -> " + output + " written into output file. \n")
         outputFile.write(" -> " + output + "\n")
         
         # After each input line is finished, reset the circuit
-        print("\n *** Now resetting circuit back to unknowns... \n")
         resetCircuit(circuit)     
         
         
@@ -671,11 +702,11 @@ def main():
         outputFile.write('%s\n' % current_TV_Detected_Faults)
         
         # After each input line is finished, reset the circuit
-        print("\n *** Now resetting circuit back to unknowns... \n")
+        #print("\n *** Now resetting circuit back to unknowns... \n")
         resetCircuit(circuit)
         
-        print("\n circuit after resetting: \n")
-        print(circuit)
+        #print("\n circuit after resetting: \n")
+        #print(circuit)
         print("\n*******************\n")
         
     outputFile.close()
